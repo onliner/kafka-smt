@@ -29,6 +29,30 @@ transforms.encode.type=org.onliner.kafka.transforms.JsonSerialize$Value
 transforms.encode.fields=comma,separated,list,of,fields
 ```
 
+### `ConcatFields`
+
+This transformation concat fields of the original record's data to single string with delimiter.
+
+The transformation:
+- expects the record value/key to be either a `STRUCT` or a `MAP`;
+
+Exists in two variants:
+- `org.onliner.kafka.transforms.ConcatFields$Key` - works on keys;
+- `org.onliner.kafka.transforms.ConcatFields$Value` - works on values.
+
+The transformation defines the following configurations:
+- `fields` - List of fields to concat. Cannot be `null` or empty.
+- `delimiter` - Delimiter for concat. Cannot be `null` or empty.
+- `output` - Output field. Cannot be `null` or empty.
+
+```properties
+transforms=concat
+transforms.concat.type=org.onliner.kafka.transforms.ConcatFields$Value
+transforms.concat.fields=latitude,longitude
+transforms.concat.delimiter=,
+transforms.concat.output=location
+```
+
 ## License
 
 This project is licensed under the [MIT license](LICENSE).
