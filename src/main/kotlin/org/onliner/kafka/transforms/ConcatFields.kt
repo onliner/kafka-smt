@@ -1,16 +1,17 @@
 package org.onliner.kafka.transforms
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.kafka.common.cache.LRUCache
 import org.apache.kafka.common.cache.SynchronizedCache
 import org.apache.kafka.common.config.ConfigDef
 import org.apache.kafka.connect.connector.ConnectRecord
 import org.apache.kafka.connect.data.Schema
+import org.apache.kafka.connect.data.Struct
 import org.apache.kafka.connect.transforms.Transformation
 import org.apache.kafka.connect.transforms.util.Requirements
 import org.apache.kafka.connect.transforms.util.SchemaUtil
 import org.apache.kafka.connect.transforms.util.SimpleConfig
 
+@Suppress("TooManyFunctions")
 abstract class ConcatFields<R : ConnectRecord<R>?> : Transformation<R> {
     companion object {
         const val OVERVIEW_DOC = "Concat fields in one specified field with delimeter"
@@ -93,21 +94,24 @@ abstract class ConcatFields<R : ConnectRecord<R>?> : Transformation<R> {
     }
 
     private fun applyWithSchema(record: R): R {
-        val value = Requirements.requireStruct(operatingValue(record), PURPOSE)
-        val schema = operatingSchema(record) ?: return record
+        val oldValue = Requirements.requireStruct(operatingValue(record), PURPOSE)
+        val oldSchema = operatingSchema(record) ?: return record
 
-        val outputSchema = copySchema(schema)
+        val newSchema = copySchema(oldSchema)
+        val newValue = copyValue(oldSchema, newSchema, oldValue)
         val output = mutableListOf<String>()
 
-        for (field in schema.fields()) {
-            if (_fields.contains(field.name())) {
-                output.add(value.getStruct(field.name()).toString())
+        for (field in _fields) {
+            val part = newValue.get(field)
+
+            if (part !== null) {
+                output.add(part.toString())
             }
         }
 
-        value.put(_outputField, output.joinToString(separator = _delimiter))
+        newValue.put(_outputField, output.joinToString(separator = _delimiter))
 
-        return newRecord(record, outputSchema, value)
+        return newRecord(record, newSchema, newValue)
     }
 
     private fun copySchema(schema: Schema): Schema {
@@ -125,6 +129,14 @@ abstract class ConcatFields<R : ConnectRecord<R>?> : Transformation<R> {
         cache.put(schema, output)
 
         return output
+    }
+
+    private fun copyValue(oldSchema: Schema, newSchema: Schema, oldValue: Struct): Struct {
+        val newValue = Struct(newSchema)
+
+        oldSchema.fields().forEach { field -> newValue.put(field.name(), oldValue.get(field)) }
+
+        return newValue
     }
 
     class Key<R : ConnectRecord<R>?> : ConcatFields<R>() {
