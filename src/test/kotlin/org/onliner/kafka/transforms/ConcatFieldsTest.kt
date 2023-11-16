@@ -32,6 +32,8 @@ internal class ConcatFieldsTest {
         val transformed = xformValue.apply(record).value() as Map<*, *>
 
         Assertions.assertEquals(1, transformed["id"])
+        Assertions.assertEquals(53.9000000, transformed["latitude"])
+        Assertions.assertEquals(-27.5666700, transformed["longitude"])
         Assertions.assertEquals("53.9,-27.56667", transformed["location"])
     }
 
