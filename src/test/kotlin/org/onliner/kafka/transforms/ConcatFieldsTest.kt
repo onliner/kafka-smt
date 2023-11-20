@@ -19,8 +19,24 @@ internal class ConcatFieldsTest {
     }
 
     @Test
+    fun handlesNullValue() {
+        configure(xformValue)
+        val given = SourceRecord(
+            null,
+            null,
+            "topic",
+            0,
+            null,
+            null
+        )
+        val expected = null
+        val actual: Any? = xformValue.apply(given).value()
+        Assertions.assertEquals(expected, actual)
+    }
+
+    @Test
     fun schemalessValueConcatFields() {
-        configure(xformValue, listOf("latitude", "longitude"), ",", "location")
+        configure(xformValue)
 
         val original = mapOf(
             "id" to 1,
@@ -39,7 +55,7 @@ internal class ConcatFieldsTest {
 
     @Test
     fun copyValueSchemaAndConvertFields() {
-        configure(xformValue, listOf("latitude", "longitude"), ",", "location")
+        configure(xformValue)
 
         val schema = SchemaBuilder
             .struct()
@@ -76,13 +92,8 @@ internal class ConcatFieldsTest {
         Assertions.assertEquals((-27.5666700).toFloat(), (transformed.value() as Struct).getFloat32("longitude"))
     }
 
-    private fun configure(
-        transform: ConcatFields<SourceRecord>,
-        fields: List<String>,
-        delimiter: String,
-        output: String
-    ) {
-        val props = mapOf("fields" to fields, "delimiter" to delimiter, "output" to output)
+    private fun configure(transform: ConcatFields<SourceRecord>) {
+        val props = mapOf("fields" to listOf("latitude", "longitude"), "delimiter" to ",", "output" to "location")
 
         transform.configure(props.toMap())
     }
