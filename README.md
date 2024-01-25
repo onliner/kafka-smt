@@ -29,6 +29,30 @@ transforms.encode.type=org.onliner.kafka.transforms.JsonSerialize$Value
 transforms.encode.fields=comma,separated,list,of,fields
 ```
 
+### `JsonDeserialize`
+
+This transformation deserialize JSON strings of the original record's data to structure.
+
+The transformation:
+- expects the record value/key to be a `JSON` string;
+- expects it to have a specified field;
+- expects `JSON` string doesn't contain arrays;
+
+Exists in two variants:
+- `org.onliner.kafka.transforms.JsonDeserialize$Key` - works on keys;
+- `org.onliner.kafka.transforms.JsonDeserialize$Value` - works on values.
+
+The transformation defines the following configurations:
+- `fields` - List of fields to serialize. Cannot be `null` or empty.
+
+- Here's an example of this transformation configuration:
+
+```properties
+transforms=decode
+transforms.decode.type=org.onliner.kafka.transforms.JsonDeserialize$Value
+transforms.decode.fields=comma,separated,list,of,fields
+```
+
 ### `ConcatFields`
 
 This transformation concat fields of the original record's data to single string with delimiter.
