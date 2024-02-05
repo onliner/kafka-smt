@@ -143,11 +143,11 @@ abstract class JsonDeserialize<R : ConnectRecord<R>?> : Transformation<R> {
     {
         return when (schema.type()) {
             Schema.Type.BOOLEAN -> value.booleanValue()
-            Schema.Type.FLOAT64 -> value.floatValue()
-            Schema.Type.FLOAT32 -> value.doubleValue()
             Schema.Type.INT16 -> value.shortValue()
             Schema.Type.INT32 -> value.intValue()
             Schema.Type.INT64 -> value.longValue()
+            Schema.Type.FLOAT32 -> value.floatValue()
+            Schema.Type.FLOAT64 -> value.doubleValue()
             Schema.Type.STRING, Schema.Type.BYTES -> value.textValue()
             Schema.Type.STRUCT -> {
                 val struct = Struct(schema)
