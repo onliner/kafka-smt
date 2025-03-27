@@ -21,12 +21,12 @@ abstract class JsonDeserialize<R : ConnectRecord<R>?> : Transformation<R> {
         const val OVERVIEW_DOC = "Deserialize specified fields to JSON structure"
 
         val CONFIG_DEF: ConfigDef = ConfigDef()
-                .define(
-                        "fields",
-                        ConfigDef.Type.LIST,
-                        ConfigDef.Importance.HIGH,
-                        "List of fields to deserialize"
-                )
+            .define(
+                "fields",
+                ConfigDef.Type.LIST,
+                ConfigDef.Importance.HIGH,
+                "List of fields to deserialize"
+            )
 
         private val cache = SynchronizedCache(LRUCache<Schema, Schema>(16))
         private val mapper = ObjectMapper()
@@ -195,13 +195,13 @@ abstract class JsonDeserialize<R : ConnectRecord<R>?> : Transformation<R> {
         override fun operatingValue(record: R?): Any? = record?.key()
 
         override fun newRecord(record: R?, schema: Schema?, value: Any?): R = record!!.newRecord(
-                record.topic(),
-                record.kafkaPartition(),
-                schema,
-                value,
-                record.valueSchema(),
-                record.value(),
-                record.timestamp()
+            record.topic(),
+            record.kafkaPartition(),
+            schema,
+            value,
+            record.valueSchema(),
+            record.value(),
+            record.timestamp()
         )
     }
 
@@ -211,13 +211,13 @@ abstract class JsonDeserialize<R : ConnectRecord<R>?> : Transformation<R> {
         override fun operatingValue(record: R?): Any? = record?.value()
 
         override fun newRecord(record: R?, schema: Schema?, value: Any?): R = record!!.newRecord(
-                record.topic(),
-                record.kafkaPartition(),
-                record.keySchema(),
-                record.key(),
-                schema,
-                value,
-                record.timestamp()
+            record.topic(),
+            record.kafkaPartition(),
+            record.keySchema(),
+            record.key(),
+            schema,
+            value,
+            record.timestamp()
         )
     }
 }
