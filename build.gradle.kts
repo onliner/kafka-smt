@@ -37,6 +37,8 @@ dependencies {
     implementation("org.apache.kafka:connect-json:$kafkaConnectVersion")
     implementation("org.apache.kafka:connect-transforms:$kafkaConnectVersion")
 
+    implementation("com.fasterxml.uuid:java-uuid-generator:5.1.0")
+
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
 }

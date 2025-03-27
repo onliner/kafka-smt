@@ -77,6 +77,29 @@ transforms.concat.delimiter=,
 transforms.concat.output=location
 ```
 
+### `InsertUuid`
+
+This transformation insert UUID v5 based on fields of the original record's data.
+
+The transformation:
+- expects the record value/key to be either a `STRUCT` or a `MAP`;
+
+Exists in two variants:
+- `org.onliner.kafka.transforms.InsertUuid$Key` - works on keys;
+- `org.onliner.kafka.transforms.InsertUuid$Value` - works on values.
+
+The transformation defines the following configurations:
+- `fields` - List of fields to base uuid on. Cannot be `null` or empty.
+- `output` - Output field. Cannot be `null` or empty.
+- `namespace` - Parent UUID namespace. Can be `null`. Default to NAMESPACE_URL (6ba7b811-9dad-11d1-80b4-00c04fd430c8)
+
+```properties
+transforms=uuid
+transforms.uuid.type=org.onliner.kafka.transforms.InsertUuid$Value
+transforms.uuid.fields=foo,bar
+transforms.uuid.output=id
+```
+
 ## License
 
 This project is licensed under the [MIT license](LICENSE).
