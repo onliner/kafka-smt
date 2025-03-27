@@ -49,6 +49,23 @@ kotlin {
     }
 }
 
+tasks {
+    val fatJar = register<Jar>("fatJar") {
+        dependsOn.addAll(listOf("compileJava", "compileKotlin", "processResources"))
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        manifest { attributes(mapOf("Main-Class" to "org.onliner.kafka.smt")) }
+        val sourcesMain = sourceSets.main.get()
+        val contents = configurations.runtimeClasspath.get()
+            .map { if (it.isDirectory) it else zipTree(it) } +
+                sourcesMain.output
+        from(contents)
+    }
+
+    build {
+        dependsOn(fatJar) // Trigger fat jar creation during build
+    }
+}
+
 publishing {
     publications {
         create<MavenPublication>("maven") {
