@@ -1,6 +1,4 @@
-/*
- * User Manual available at https://docs.gradle.org/7.4/userguide/building_java_projects.html
- */
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 group = "org.onliner.kafka.smt"
 version = System.getenv("VERSION") ?: "1.0.0"
@@ -20,6 +18,7 @@ plugins {
     `java-library` // Apply the java-library plugin for API and implementation separation.
     `maven-publish`
     id("io.gitlab.arturbosch.detekt") version "1.20.0"
+    id("com.gradleup.shadow") version "8.3.5"
 }
 
 repositories {
@@ -30,12 +29,12 @@ dependencies {
     val kafkaConnectVersion = "3.2.+"
     val junitVersion = "5.8.2"
 
-    compileOnly(platform("org.jetbrains.kotlin:kotlin-bom")) // Align versions of all Kotlin components
-    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8") // Use the Kotlin JDK 8 standard library.
+    compileOnly(platform("org.jetbrains.kotlin:kotlin-bom"))
+    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 
-    implementation("org.apache.kafka:connect-api:$kafkaConnectVersion")
-    implementation("org.apache.kafka:connect-json:$kafkaConnectVersion")
-    implementation("org.apache.kafka:connect-transforms:$kafkaConnectVersion")
+    runtimeOnly("org.apache.kafka:connect-api:$kafkaConnectVersion")
+    runtimeOnly("org.apache.kafka:connect-json:$kafkaConnectVersion")
+    runtimeOnly("org.apache.kafka:connect-transforms:$kafkaConnectVersion")
 
     implementation("com.fasterxml.uuid:java-uuid-generator:5.1.0")
 
@@ -49,21 +48,12 @@ kotlin {
     }
 }
 
-tasks {
-    val fatJar = register<Jar>("fatJar") {
-        dependsOn.addAll(listOf("compileJava", "compileKotlin", "processResources"))
-        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-        manifest { attributes(mapOf("Main-Class" to "org.onliner.kafka.smt")) }
-        val sourcesMain = sourceSets.main.get()
-        val contents = configurations.runtimeClasspath.get()
-            .map { if (it.isDirectory) it else zipTree(it) } +
-                sourcesMain.output
-        from(contents)
-    }
+tasks.named<ShadowJar>("shadowJar") {
+    archiveBaseName.set(project.name)
+    archiveClassifier.set("")
+    archiveVersion.set(project.version.toString())
 
-    build {
-        dependsOn(fatJar) // Trigger fat jar creation during build
-    }
+    configurations = listOf(project.configurations.compileClasspath.get())
 }
 
 publishing {
