@@ -100,6 +100,23 @@ transforms.uuid.fields=foo,bar
 transforms.uuid.output=id
 ```
 
+### `GroupPartitioner`
+
+This transformation assign partition for message based on specified group and workers num.
+
+The transformation defines the following configurations:
+- `partitions` - Total number of topic partitions.
+- `workers` - Number of workers. Default to number of partitions
+- `group_key` - Group header key name. Default 'group'
+- `spread_key` - Spread header key name. Default 'spread'
+
+```properties
+transforms=group_partitioner
+transforms.group_partitioner.type=org.onliner.kafka.transforms.GroupPartitioner
+transforms.group_partitioner.partitions=192
+transforms.group_partitioner.workers=48
+```
+
 ## License
 
 This project is licensed under the [MIT license](LICENSE).

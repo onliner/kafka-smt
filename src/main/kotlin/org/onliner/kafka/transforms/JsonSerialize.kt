@@ -8,7 +8,6 @@ import org.apache.kafka.connect.connector.ConnectRecord
 import org.apache.kafka.connect.data.Schema
 import org.apache.kafka.connect.data.SchemaBuilder
 import org.apache.kafka.connect.data.Struct
-import org.apache.kafka.connect.json.JsonConverter
 import org.apache.kafka.connect.transforms.Transformation
 import org.apache.kafka.connect.transforms.util.Requirements
 import org.apache.kafka.connect.transforms.util.SchemaUtil
@@ -163,7 +162,8 @@ abstract class JsonSerialize<R : ConnectRecord<R>?> : Transformation<R> {
             value,
             record.valueSchema(),
             record.value(),
-            record.timestamp()
+            record.timestamp(),
+            record.headers(),
         )
     }
 
@@ -179,7 +179,8 @@ abstract class JsonSerialize<R : ConnectRecord<R>?> : Transformation<R> {
             record.key(),
             schema,
             value,
-            record.timestamp()
+            record.timestamp(),
+            record.headers(),
         )
     }
 }
