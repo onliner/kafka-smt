@@ -201,7 +201,8 @@ abstract class JsonDeserialize<R : ConnectRecord<R>?> : Transformation<R> {
             value,
             record.valueSchema(),
             record.value(),
-            record.timestamp()
+            record.timestamp(),
+            record.headers(),
         )
     }
 
@@ -217,7 +218,8 @@ abstract class JsonDeserialize<R : ConnectRecord<R>?> : Transformation<R> {
             record.key(),
             schema,
             value,
-            record.timestamp()
+            record.timestamp(),
+            record.headers(),
         )
     }
 }

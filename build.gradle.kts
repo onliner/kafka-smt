@@ -9,7 +9,7 @@ val javaVersion = 11
 
 val artifactoryContext =
     project.properties.getOrDefault("artifactory_context", System.getenv("ARTIFACTORY_CONTEXT")).toString()
-val artifactoryUsern =
+val artifactoryUsername =
     project.properties.getOrDefault("artifactory_user", System.getenv("ARTIFACTORY_USER")).toString()
 val artifactoryPassword =
     project.properties.getOrDefault("artifactory_password", System.getenv("ARTIFACTORY_PWD")).toString()
@@ -27,7 +27,7 @@ repositories {
 }
 
 dependencies {
-    val kafkaConnectVersion = "3.2.+"
+    val kafkaConnectVersion = "3.9.+"
     val junitVersion = "5.8.2"
 
     compileOnly(platform("org.jetbrains.kotlin:kotlin-bom")) // Align versions of all Kotlin components
@@ -112,7 +112,7 @@ publishing {
             name = "ArtifactoryLocal"
             url = uri(artifactoryContext + "/libs-release-local")
             credentials {
-                username = artifactoryUsern
+                username = artifactoryUsername
                 password = artifactoryPassword
             }
         }
