@@ -1,11 +1,7 @@
-/*
- * User Manual available at https://docs.gradle.org/7.4/userguide/building_java_projects.html
- */
-
 group = "org.onliner.kafka.smt"
 version = System.getenv("VERSION") ?: "1.0.0"
 
-val javaVersion = 11
+val javaVersion = 17
 
 val artifactoryContext =
     project.properties.getOrDefault("artifactory_context", System.getenv("ARTIFACTORY_CONTEXT")).toString()
@@ -15,11 +11,11 @@ val artifactoryPassword =
     project.properties.getOrDefault("artifactory_password", System.getenv("ARTIFACTORY_PWD")).toString()
 
 plugins {
-    kotlin("jvm") version "1.6.21"
-    idea // Generates files that are used by IntelliJ IDEA, thus making it possible to open the project from IDEA
-    `java-library` // Apply the java-library plugin for API and implementation separation.
+    kotlin("jvm") version "2.1.21"
+    idea
+    `java-library`
     `maven-publish`
-    id("io.gitlab.arturbosch.detekt") version "1.20.0"
+    id("com.gradleup.shadow") version "8.3.5"
 }
 
 repositories {
@@ -30,40 +26,31 @@ dependencies {
     val kafkaConnectVersion = "3.9.+"
     val junitVersion = "5.8.2"
 
-    compileOnly(platform("org.jetbrains.kotlin:kotlin-bom")) // Align versions of all Kotlin components
-    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8") // Use the Kotlin JDK 8 standard library.
+    compileOnly(platform("org.jetbrains.kotlin:kotlin-bom"))
+    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 
-    implementation("org.apache.kafka:connect-api:$kafkaConnectVersion")
-    implementation("org.apache.kafka:connect-json:$kafkaConnectVersion")
-    implementation("org.apache.kafka:connect-transforms:$kafkaConnectVersion")
+    compileOnly("org.apache.kafka:connect-api:$kafkaConnectVersion")
+    compileOnly("org.apache.kafka:connect-transforms:${kafkaConnectVersion}")
 
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.18.4")
     implementation("com.fasterxml.uuid:java-uuid-generator:5.1.0")
 
+    testImplementation("org.apache.kafka:connect-api:${kafkaConnectVersion}")
+    testImplementation("org.apache.kafka:connect-transforms:${kafkaConnectVersion}")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
 }
 
 kotlin {
-    jvmToolchain {
-        (this as JavaToolchainSpec).languageVersion.set(JavaLanguageVersion.of(javaVersion))
-    }
+    jvmToolchain(javaVersion)
 }
 
-tasks {
-    val fatJar = register<Jar>("fatJar") {
-        dependsOn.addAll(listOf("compileJava", "compileKotlin", "processResources"))
-        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-        manifest { attributes(mapOf("Main-Class" to "org.onliner.kafka.smt")) }
-        val sourcesMain = sourceSets.main.get()
-        val contents = configurations.runtimeClasspath.get()
-            .map { if (it.isDirectory) it else zipTree(it) } +
-                sourcesMain.output
-        from(contents)
-    }
+tasks.shadowJar {
+    minimize()
 
-    build {
-        dependsOn(fatJar) // Trigger fat jar creation during build
-    }
+    archiveBaseName.set(project.name)
+    archiveVersion.set(project.version.toString())
+    archiveClassifier.set("")
 }
 
 publishing {
