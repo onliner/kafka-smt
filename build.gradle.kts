@@ -27,11 +27,11 @@ dependencies {
     val junitVersion = "5.8.2"
 
     compileOnly(platform("org.jetbrains.kotlin:kotlin-bom"))
-    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 
     compileOnly("org.apache.kafka:connect-api:$kafkaConnectVersion")
     compileOnly("org.apache.kafka:connect-transforms:${kafkaConnectVersion}")
 
+    implementation("org.jetbrains.kotlin:kotlin-stdlib")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.18.4")
     implementation("com.fasterxml.uuid:java-uuid-generator:5.1.0")
 
