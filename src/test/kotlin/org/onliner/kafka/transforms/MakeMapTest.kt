@@ -17,13 +17,46 @@ internal class MakeMapTest {
     }
 
     @Test
-    fun handlesNullValue() {
+    fun schemalessHandlesNullValue() {
         configure(xformValue)
+
         val given = SourceRecord(null, null, "topic", 0, null, null)
         val expected = null
         val actual: Any? = xformValue.apply(given).value()
 
         Assertions.assertEquals(expected, actual)
+    }
+
+    @Test
+    fun schemalessHandlesPartlyMissedFields() {
+        configure(xformValue)
+
+        val original = mapOf(
+            "id" to 1,
+            "initiator_type" to "user",
+        )
+
+        val record = SourceRecord(null, null, "test", 0, null, original)
+        val transformed = xformValue.apply(record).value() as Map<*, *>
+
+        Assertions.assertEquals(1, transformed["id"])
+        Assertions.assertEquals(mapOf("type" to "user"), transformed["initiator"])
+    }
+
+    @Test
+    fun schemalessHandlesAllMissedFields() {
+        configure(xformValue)
+
+        val original = mapOf(
+            "id" to 1,
+            "value" to 2,
+        )
+
+        val record = SourceRecord(null, null, "test", 0, null, original)
+        val transformed = xformValue.apply(record).value() as Map<*, *>
+
+        Assertions.assertEquals(1, transformed["id"])
+        Assertions.assertEquals(mapOf<String, Any?>(), transformed["initiator"])
     }
 
     @Test
@@ -44,7 +77,7 @@ internal class MakeMapTest {
     }
 
     @Test
-    fun copyValueSchemaAndConvertFields() {
+    fun schemaMakeMap() {
         configure(xformValue)
 
         val schema = SchemaBuilder
@@ -86,6 +119,40 @@ internal class MakeMapTest {
 
         Assertions.assertEquals(Schema.STRING_SCHEMA, outputSchema.field("id").schema())
         Assertions.assertEquals("123", outputStruct.getString("id"))
+    }
+
+    @Test
+    fun schemaHandlesOptionalFieldsMakeMap() {
+        configure(xformValue)
+
+        val schema = SchemaBuilder
+            .struct()
+            .name("name")
+            .version(1)
+            .doc("doc")
+            .field("id", Schema.INT32_SCHEMA)
+            .field("initiator_type", Schema.STRING_SCHEMA)
+            .field("initiator_id", Schema.OPTIONAL_STRING_SCHEMA)
+            .build()
+
+        val value = Struct(schema)
+            .put("id", 1)
+            .put("initiator_type", "user")
+
+        val original = SourceRecord(null, null, "test", 0, schema, value)
+        val transformed: SourceRecord = xformValue.apply(original)
+        val transformedSchema = transformed.valueSchema()
+        val outputStruct = (transformed.value() as Struct).getStruct("initiator")
+        val outputSchema = transformedSchema.field("initiator").schema()
+
+        Assertions.assertEquals(Schema.INT32_SCHEMA, transformedSchema.field("id").schema())
+        Assertions.assertEquals(1, (transformed.value() as Struct).getInt32("id"))
+
+        Assertions.assertEquals(Schema.STRING_SCHEMA, outputSchema.field("type").schema())
+        Assertions.assertEquals("user", outputStruct.getString("type"))
+
+        Assertions.assertEquals(Schema.OPTIONAL_STRING_SCHEMA, outputSchema.field("id").schema())
+        Assertions.assertEquals(null, outputStruct.getString("id"))
     }
 
     private fun configure(transform: MakeMap<SourceRecord>) {

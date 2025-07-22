@@ -22,7 +22,7 @@ abstract class MakeMap<R : ConnectRecord<R>?> : Transformation<R> {
                 "fields",
                 ConfigDef.Type.LIST,
                 ConfigDef.Importance.HIGH,
-                "List of fields to deserialize"
+                "List of fields mappings"
             )
             .define(
                 "output",
@@ -85,15 +85,13 @@ abstract class MakeMap<R : ConnectRecord<R>?> : Transformation<R> {
         val value = Requirements.requireMap(operatingValue(record), PURPOSE)
         val map = mutableMapOf<String, Any?>()
 
-        for (field in _fields) {
-            if (!value.containsKey(field.key)) {
-                continue
+        _fields.forEach { (from, to) ->
+            if (value.containsKey(from)) {
+                map.put(to, value[from])
             }
-
-            map.put(field.value, value[field.key])
         }
 
-        value[_outputField] = map
+        value.put(_outputField, map)
 
         return newRecord(record, null, value)
     }
@@ -101,14 +99,16 @@ abstract class MakeMap<R : ConnectRecord<R>?> : Transformation<R> {
     private fun applyWithSchema(record: R): R {
         val value = Requirements.requireStruct(operatingValue(record), PURPOSE)
         val schema = operatingSchema(record) ?: return record
-        val map = Struct(mapSchema(schema))
-
-        for (field in _fields) {
-            map.put(field.value, value[field.key])
-        }
+        val map = Struct(outputMapSchema(schema))
 
         val outputSchema = copySchema(schema)
         val outputValue = copyValue(schema, outputSchema, value)
+
+        for (field in _fields) {
+            if (value.schema().field(field.key) !== null) {
+                map.put(field.value, value[field.key])
+            }
+        }
 
         outputValue.put(_outputField, map)
 
@@ -126,14 +126,14 @@ abstract class MakeMap<R : ConnectRecord<R>?> : Transformation<R> {
 
         schema.fields().forEach { field -> output.field(field.name(), field.schema()) }
 
-        output.field(_outputField, mapSchema(schema))
+        output.field(_outputField, outputMapSchema(schema))
 
         cache.put(schema, output)
 
         return output
     }
 
-    private fun mapSchema(schema: Schema): Schema {
+    private fun outputMapSchema(schema: Schema): Schema {
         val builder = SchemaBuilder.struct()
 
         _fields.forEach { (from, to) ->

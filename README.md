@@ -123,7 +123,6 @@ This transformation puts specified fields of the original record's data to the n
 
 The transformation:
 - expects the record value/key to be either a `STRUCT` or a `MAP`;
-- expects it to have specified fields;
 
 Exists in two variants:
 - `org.onliner.kafka.transforms.MakeMap$Key` - works on keys;
