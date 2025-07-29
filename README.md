@@ -45,7 +45,7 @@ Exists in two variants:
 The transformation defines the following configurations:
 - `fields` - List of fields to serialize. Cannot be `null` or empty.
 
-- Here's an example of this transformation configuration:
+Here's an example of this transformation configuration:
 
 ```properties
 transforms=decode
@@ -115,6 +115,30 @@ transforms=group_partitioner
 transforms.group_partitioner.type=org.onliner.kafka.transforms.GroupPartitioner
 transforms.group_partitioner.partitions=192
 transforms.group_partitioner.workers=48
+```
+
+### `MakeMap`
+
+This transformation puts specified fields of the original record's data to the new field as a map 
+
+The transformation:
+- expects the record value/key to be either a `STRUCT` or a `MAP`;
+
+Exists in two variants:
+- `org.onliner.kafka.transforms.MakeMap$Key` - works on keys;
+- `org.onliner.kafka.transforms.MakeMap$Value` - works on values.
+
+The transformation defines the following configurations:
+- `fields` - List of field mappings in format from_field:to_field. Cannot be `null` or empty.
+- `output` - Output field. Cannot be `null` or empty.
+
+Here's an example of this transformation configuration:
+
+```properties
+transforms=makemap
+transforms.makemap.type=org.onliner.kafka.transforms.MakeMap$Value
+transforms.makemap.fields=user_type:type,user_id:id
+transforms.makemap.output=user
 ```
 
 ## License
