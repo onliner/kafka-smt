@@ -28,7 +28,7 @@ abstract class JsonDeserialize<R : ConnectRecord<R>?> : Transformation<R> {
                 "List of fields to deserialize"
             )
 
-        private val cache = SynchronizedCache(LRUCache<Schema, Schema>(16))
+        private val cache = SynchronizedCache(LRUCache<CacheKey, Schema>(16))
         private val mapper = ObjectMapper()
 
         private const val PURPOSE = "onliner-kafka-smt-json-decode"
@@ -71,7 +71,7 @@ abstract class JsonDeserialize<R : ConnectRecord<R>?> : Transformation<R> {
 
         for (field in _fields) {
             if (!value.containsKey(field)) {
-                continue;
+                continue
             }
 
             value[field] = convert(value[field])
@@ -112,29 +112,24 @@ abstract class JsonDeserialize<R : ConnectRecord<R>?> : Transformation<R> {
             return mapper.readTree(value)
         }
 
-        return value;
+        return value
     }
 
     private fun copySchema(original: Schema, converted: HashMap<String, JsonNode>): Schema {
-        val cached = cache.get(original)
+        val converted = converted.mapValues { asConnectSchema(it.value) }
+        val cacheKey = cacheKey(original, converted)
 
-        if (cached != null) {
-            return cached
-        }
+        cache.get(cacheKey)?.let { return it }
 
         val output = SchemaUtil.copySchemaBasics(original)
 
         for (field in original.fields()) {
-            var schema = field.schema()
-
-            if (converted.containsKey(field.name())) {
-                schema = asConnectSchema(converted[field.name()]!!) ?: continue
-            }
+            val schema = converted[field.name()] ?: field.schema()
 
             output.field(field.name(), schema)
         }
 
-        cache.put(original, output)
+        cache.put(cacheKey, output)
 
         return output
     }
@@ -176,8 +171,8 @@ abstract class JsonDeserialize<R : ConnectRecord<R>?> : Transformation<R> {
             value.isObject -> {
                 val builder = SchemaBuilder.struct()
 
-                for ((k,v) in value.fields()) {
-                    val kSchema = asConnectSchema(v) ?: continue
+                value.fields().asSequence().toList().sortedBy { it.key }.forEach { (k, v) ->
+                    val kSchema = asConnectSchema(v) ?: return@forEach
 
                     builder.field(k, kSchema)
                 }
@@ -188,6 +183,15 @@ abstract class JsonDeserialize<R : ConnectRecord<R>?> : Transformation<R> {
             else -> null
         }
     }
+
+    private fun cacheKey(original: Schema, converted: Map<String, Schema?>): CacheKey {
+        return CacheKey(original.hashCode(), converted.hashCode())
+    }
+
+    private data class CacheKey(
+        val original: Int,
+        val fingerprint: Int
+    )
 
     class Key<R : ConnectRecord<R>?> : JsonDeserialize<R>() {
         override fun operatingSchema(record: R?): Schema? = record?.keySchema()
