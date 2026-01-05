@@ -60,36 +60,100 @@ internal class JsonDeserializeTest {
     fun copyValueSchemaAndConvertFields() {
         configure(xformValue, "payload")
 
-        val schema = SchemaBuilder
+        data class Case(
+            val label: String,
+            val actual: String,
+            val expected: Map<String, Any>,
+        )
+
+        val cases = listOf(
+            Case(
+                label = "Basic example",
+                actual = """{"foo":"bar","baz":false}""",
+                expected = mapOf(
+                    "foo" to "bar",
+                    "baz" to false
+                ),
+            ),
+            Case(
+                label = "Just to be sure",
+                actual = """{"foo":"zed","baz":true}""",
+                expected = mapOf(
+                    "foo" to "zed",
+                    "baz" to true
+                ),
+            ),
+            Case(
+                label = "Other field order",
+                actual = """{"baz":true,"foo":""}""",
+                expected = mapOf(
+                    "foo" to "",
+                    "baz" to true
+                ),
+            ),
+            Case(
+                label = "Introduce new field",
+                actual = """{"foo":"bar","baz":false,"zed":1}""",
+                expected = mapOf(
+                    "foo" to "bar",
+                    "baz" to false,
+                    "zed" to 1
+                ),
+            ),
+        )
+
+        val inputSchema = SchemaBuilder
             .struct()
             .name("name")
             .version(1)
             .doc("doc")
             .field("payload", Schema.STRING_SCHEMA)
-            .field("string", Schema.STRING_SCHEMA)
+            .field("hello", Schema.STRING_SCHEMA)
             .build()
 
-        val value = Struct(schema)
-            .put("payload", "{\"foo\":\"bar\",\"baz\":false}")
-            .put("string", "string")
+        for (c in cases) {
+            val label = c.label
+            val value = Struct(inputSchema)
+                .put("payload", c.actual)
+                .put("hello", "world")
 
-        val original = SourceRecord(null, null, "test", 0, schema, value)
-        val transformed: SourceRecord = xformValue.apply(original)
-        val outputSchema = transformed.valueSchema()
-        val payloadStruct = (transformed.value() as Struct).getStruct("payload")
-        val payloadSchema = outputSchema.field("payload").schema()
+            val original = SourceRecord(null, null, "test", 0, inputSchema, value)
+            val transformed = xformValue.apply(original)
 
-        assertEquals(schema.name(), outputSchema.name())
-        assertEquals(schema.version(), outputSchema.version())
-        assertEquals(schema.doc(), outputSchema.doc())
+            val outputSchema = transformed.valueSchema()
+            val outputValue = transformed.value() as Struct
 
-        assertEquals(payloadSchema.field("foo").schema(), Schema.STRING_SCHEMA)
-        assertEquals("bar", payloadStruct.getString("foo"))
-        assertEquals(payloadSchema.field("baz").schema(), Schema.BOOLEAN_SCHEMA)
-        assertEquals(false, payloadStruct.getBoolean("baz"))
+            assertEquals(inputSchema.name(), outputSchema.name(), "Case $label")
+            assertEquals(inputSchema.version(), outputSchema.version(), "Case $label")
+            assertEquals(inputSchema.doc(), outputSchema.doc(), "Case $label")
 
-        assertEquals(Schema.STRING_SCHEMA, outputSchema.field("string").schema())
-        assertEquals("string", (transformed.value() as Struct).getString("string"))
+            val payloadField = outputSchema.field("payload")
+            val payloadSchema = payloadField.schema()
+            val payloadStruct = outputValue.getStruct("payload")
+
+            for ((field, expectedValue) in c.expected) {
+                val fieldSchema = payloadSchema.field(field).schema()
+
+                when (expectedValue) {
+                    is String -> {
+                        assertEquals(Schema.STRING_SCHEMA, fieldSchema, "Case $label: $field")
+                        assertEquals(expectedValue, payloadStruct.getString(field), "Case $label: $field")
+                    }
+                    is Boolean -> {
+                        assertEquals(Schema.BOOLEAN_SCHEMA, fieldSchema, "Case $label: $field")
+                        assertEquals(expectedValue, payloadStruct.getBoolean(field), "Case $label: $field")
+                    }
+                    is Int -> {
+                        assertEquals(Schema.INT32_SCHEMA, fieldSchema, "Case $label: $field")
+                        assertEquals(expectedValue, payloadStruct.getInt32(field), "Case $label: $field")
+                    }
+                    else -> error("Unsupported type for field '$field'")
+                }
+            }
+
+            assertEquals(Schema.STRING_SCHEMA, outputSchema.field("hello").schema(), "Case $label")
+            assertEquals("world", outputValue.getString("hello"), "Case $label")
+        }
     }
 
     @Test
